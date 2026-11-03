@@ -1,61 +1,81 @@
+document.documentElement.classList.add('js');
+
 // Menu Mobile
 const hamburger = document.querySelector('.hamburger');
 const navLinks = document.querySelector('.nav-links');
 const navItems = document.querySelectorAll('.nav-links li a');
 
-hamburger.addEventListener('click', () => {
-    navLinks.classList.toggle('active');
+function setMenuOpen(isOpen) {
+    navLinks.classList.toggle('active', isOpen);
+    hamburger.setAttribute('aria-expanded', String(isOpen));
+    hamburger.setAttribute('aria-label', isOpen ? 'Fermer le menu' : 'Ouvrir le menu');
     const icon = hamburger.querySelector('i');
-    icon.classList.toggle('fa-bars');
-    icon.classList.toggle('fa-times');
+    icon.classList.toggle('fa-bars', !isOpen);
+    icon.classList.toggle('fa-times', isOpen);
+}
+
+hamburger.addEventListener('click', () => {
+    const isOpen = hamburger.getAttribute('aria-expanded') === 'true';
+    setMenuOpen(!isOpen);
+});
+
+document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+        setMenuOpen(false);
+    }
 });
 
 navItems.forEach(item => {
     item.addEventListener('click', () => {
-        navLinks.classList.remove('active');
-        hamburger.querySelector('i').classList.remove('fa-times');
-        hamburger.querySelector('i').classList.add('fa-bars');
+        setMenuOpen(false);
     });
 });
 
-// Animation Scroll Reveal (L'effet magique)
-function reveal() {
-    var reveals = document.querySelectorAll(".reveal");
+// Reveal sections as they enter the viewport.
+const revealElements = document.querySelectorAll('.reveal');
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    for (var i = 0; i < reveals.length; i++) {
-        var windowHeight = window.innerHeight;
-        var elementTop = reveals[i].getBoundingClientRect().top;
-        var elementVisible = 100;
+if (prefersReducedMotion) {
+    revealElements.forEach(element => element.classList.add('active'));
+} else if ('IntersectionObserver' in window) {
+    const revealObserver = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('active');
+                revealObserver.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.12 });
 
-        if (elementTop < windowHeight - elementVisible) {
-            reveals[i].classList.add("active");
-        }
-    }
+    revealElements.forEach(element => revealObserver.observe(element));
+} else {
+    revealElements.forEach(element => element.classList.add('active'));
 }
 
-window.addEventListener("scroll", reveal);
-reveal(); // Pour activer les éléments déjà visibles au chargement
-
-// Effet Typewriter (Machine à écrire) pour le Hero Section
+/* Effet Typewriter */
 const textArray = ["Technico-Commercial", "Développeur Digital", "Expert Relation Client", "Créateur de Sites Web"];
 let textIndex = 0;
-let charIndex = 0;
+let charIndex = textArray[0].length - 1;
 let isDeleting = false;
 const typeSpeed = 100;
 const deleteSpeed = 50;
 const delayBetweenWords = 2000;
-
 const typeWriterElement = document.querySelector(".typewriter");
 
 function typeWriter() {
+    if (prefersReducedMotion) {
+        typeWriterElement.textContent = textArray[0];
+        return;
+    }
+
     const currentWord = textArray[textIndex];
-    
+
     if (isDeleting) {
-        typeWriterElement.textContent = currentWord.substring(0, charIndex - 1);
         charIndex--;
+        typeWriterElement.textContent = currentWord.substring(0, charIndex);
     } else {
-        typeWriterElement.textContent = currentWord.substring(0, charIndex + 1);
         charIndex++;
+        typeWriterElement.textContent = currentWord.substring(0, charIndex);
     }
 
     let timeoutSpeed = isDeleting ? deleteSpeed : typeSpeed;
@@ -71,5 +91,4 @@ function typeWriter() {
     setTimeout(typeWriter, timeoutSpeed);
 }
 
-// Lancer l'effet au chargement
-document.addEventListener("DOMContentLoaded", typeWriter);
+typeWriter();
